@@ -14,7 +14,13 @@ import com.dovelhomesso.app.ui.navigation.NavGraph
 import com.dovelhomesso.app.ui.theme.DoveLhoMessoTheme
 import com.dovelhomesso.app.ui.viewmodels.MainViewModel
 
+import androidx.compose.runtime.*
+import com.dovelhomesso.app.ui.screens.PinScreen
+import com.dovelhomesso.app.util.PinManager
+
 class MainActivity : ComponentActivity() {
+    private var mainViewModel: MainViewModel? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -25,15 +31,45 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    val navController = rememberNavController()
+                    val context = androidx.compose.ui.platform.LocalContext.current
                     val viewModel: MainViewModel = viewModel()
+                    mainViewModel = viewModel
                     
-                    NavGraph(
-                        navController = navController,
-                        viewModel = viewModel
-                    )
+                    // Initialize unlock state based on PIN existence if not already initialized
+                    LaunchedEffect(Unit) {
+                        if (!PinManager.isPinSet(context)) {
+                            viewModel.unlockApp()
+                        }
+                    }
+
+                    val isUnlocked by viewModel.isAppUnlocked.collectAsState()
+                    
+                    if (isUnlocked) {
+                        val navController = rememberNavController()
+                        
+                        NavGraph(
+                            navController = navController,
+                            viewModel = viewModel
+                        )
+                    } else {
+                        PinScreen(
+                            title = "Inserisci PIN per accedere",
+                            onPinCorrect = { viewModel.unlockApp() },
+                            isSettingPin = false,
+                            validatePin = { input -> PinManager.checkPin(context, input) }
+                        )
+                    }
                 }
             }
+        }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        // Lock the app if it's not a configuration change (e.g. rotation)
+        // and if a PIN is set.
+        if (!isChangingConfigurations && PinManager.isPinSet(this)) {
+            mainViewModel?.lockApp()
         }
     }
 }

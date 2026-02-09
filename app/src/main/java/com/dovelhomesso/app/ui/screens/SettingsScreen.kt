@@ -32,6 +32,25 @@ fun SettingsScreen(
     val backupStatus by viewModel.backupStatus.collectAsState()
     
     var showResetDialog by remember { mutableStateOf(false) }
+    var showPinSetup by remember { mutableStateOf(false) }
+    var hasPin by remember { mutableStateOf(com.dovelhomesso.app.util.PinManager.isPinSet(context)) }
+
+    if (showPinSetup) {
+        PinScreen(
+            onPinCorrect = {}, // Not used in setup mode
+            onPinSet = { newPin ->
+                com.dovelhomesso.app.util.PinManager.setPin(context, newPin)
+                hasPin = true
+                showPinSetup = false
+            },
+            isSettingPin = true
+        )
+        // Add a back button handling or similar if needed, but PinScreen takes full control here
+        // For better UX, we might want a "Cancel" button in PinScreen, but for now let's rely on system back or add a button in PinScreen later.
+        // Actually, let's wrap it in a Surface to ensure it covers everything and maybe add a cancel button if we modify PinScreen.
+        // But simply showing it conditionally works.
+        return
+    }
     
     // Launcher for creating backup file
     val createDocumentLauncher = rememberLauncherForActivityResult(
@@ -158,6 +177,33 @@ fun SettingsScreen(
             }
             
             // Backup Section
+            Text(
+                text = "Sicurezza",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+            )
+
+            ListItem(
+                headlineContent = { Text(if (hasPin) "Rimuovi PIN" else "Imposta PIN") },
+                supportingContent = { Text(if (hasPin) "Disabilita la protezione con PIN" else "Proteggi l'accesso ai dati") },
+                leadingContent = {
+                    Icon(if (hasPin) Icons.Default.LockOpen else Icons.Default.Lock, contentDescription = null)
+                },
+                modifier = Modifier.clickableIfEnabled(backupStatus !is MainViewModel.BackupStatus.InProgress) {
+                    if (hasPin) {
+                        // Remove PIN
+                        com.dovelhomesso.app.util.PinManager.removePin(context)
+                        hasPin = false
+                    } else {
+                        // Set PIN
+                        showPinSetup = true
+                    }
+                }
+            )
+
+            Divider(modifier = Modifier.padding(vertical = 8.dp))
+
             Text(
                 text = "Backup e Cloud",
                 style = MaterialTheme.typography.titleMedium,

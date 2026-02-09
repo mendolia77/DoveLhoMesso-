@@ -483,48 +483,13 @@ private fun EditItemDialog(
             Column(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
+                /* AI Feature disabled due to native crash on some devices
                 if (item.imagePath != null) {
                     Button(
-                        onClick = {
-                            scope.launch {
-                                isAnalyzing = true
-                                val labels = ImageAnalyzer.analyzeImage(context, Uri.fromFile(File(item.imagePath)))
-                                if (labels.isNotEmpty()) {
-                                    val newTags = (tags.split(",") + labels)
-                                        .map { it.trim() }
-                                        .filter { it.isNotEmpty() }
-                                        .distinct()
-                                        .joinToString(", ")
-                                    tags = newTags
-                                    
-                                    if (category.isBlank() && labels.isNotEmpty()) {
-                                        category = labels[0]
-                                    }
-                                }
-                                isAnalyzing = false
-                            }
-                        },
-                        enabled = !isAnalyzing,
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.tertiary
-                        )
-                    ) {
-                        if (isAnalyzing) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(20.dp),
-                                color = MaterialTheme.colorScheme.onTertiary,
-                                strokeWidth = 2.dp
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("Analisi in corso...")
-                        } else {
-                            Icon(Icons.Default.AutoAwesome, contentDescription = null)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("Suggerisci Tag (AI)")
-                        }
-                    }
+                        onClick = { ... }
+                    ) { ... }
                 }
+                */
 
                 OutlinedTextField(
                     value = name,

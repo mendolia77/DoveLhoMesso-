@@ -31,26 +31,34 @@ class DoveLhoMessoApp : Application() {
     override fun onCreate() {
         super.onCreate()
         
-        // Create Notification Channel
-        NotificationHelper.createNotificationChannel(this)
-        
-        // Schedule Expiry Check Worker
-        setupPeriodicWork()
+        try {
+            // Create Notification Channel
+            NotificationHelper.createNotificationChannel(this)
+            
+            // Schedule Expiry Check Worker
+            setupPeriodicWork()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
         
         // Demo data disabled - user will create their own data
         // seedDemoDataIfNeeded()
     }
     
     private fun setupPeriodicWork() {
-        val workRequest = PeriodicWorkRequestBuilder<ExpiryCheckWorker>(1, TimeUnit.DAYS)
-            .setInitialDelay(1, TimeUnit.HOURS) // Run first check after 1 hour to avoid startup lag
-            .build()
-            
-        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
-            "ExpiryCheck",
-            ExistingPeriodicWorkPolicy.KEEP, // Keep existing schedule if app restarts
-            workRequest
-        )
+        try {
+            val workRequest = PeriodicWorkRequestBuilder<ExpiryCheckWorker>(1, TimeUnit.DAYS)
+                .setInitialDelay(1, TimeUnit.HOURS) // Run first check after 1 hour to avoid startup lag
+                .build()
+                
+            WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+                "ExpiryCheck",
+                ExistingPeriodicWorkPolicy.KEEP, // Keep existing schedule if app restarts
+                workRequest
+            )
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
     
     private fun seedDemoDataIfNeeded() {

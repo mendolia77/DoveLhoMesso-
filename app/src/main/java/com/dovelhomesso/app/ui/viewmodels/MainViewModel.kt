@@ -448,6 +448,18 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     
     // ========== Init ==========
     
+    // ========== Security / Lock State ==========
+    private val _isAppUnlocked = MutableStateFlow(false)
+    val isAppUnlocked: StateFlow<Boolean> = _isAppUnlocked.asStateFlow()
+
+    fun unlockApp() {
+        _isAppUnlocked.value = true
+    }
+
+    fun lockApp() {
+        _isAppUnlocked.value = false
+    }
+
     init {
         // Recent entries will be loaded on demand, not at startup
     }

@@ -102,8 +102,9 @@ dependencies {
     implementation("com.google.zxing:core:3.5.2")
     implementation("com.journeyapps:zxing-android-embedded:4.3.0")
     
-    // ML Kit (Image Labeling)
+    /* ML Kit disabled
     implementation("com.google.mlkit:image-labeling:17.0.7")
+    */
     
     // Debug
     debugImplementation("androidx.compose.ui:ui-tooling")
