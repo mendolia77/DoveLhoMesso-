@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">DoveL\'hoMesso</string>
+    
+    <!-- Navigation -->
+    <string name="home">Home</string>
+    <string name="rooms">Stanze</string>
+    <string name="settings">Impostazioni</string>
+    
+    <!-- Actions -->
+    <string name="add_item">Aggiungi Oggetto</string>
+    <string name="add_document">Aggiungi Documento</string>
+    <string name="save">Salva</string>
+    <string name="cancel">Annulla</string>
+    <string name="delete">Elimina</string>
+    <string name="edit">Modifica</string>
+    <string name="duplicate">Duplica</string>
+    <string name="search">Cerca</string>
+    <string name="create">Crea</string>
+    
+    <!-- Labels -->
+    <string name="name">Nome</string>
+    <string name="title">Titolo</string>
+    <string name="position">Posizione</string>
+    <string name="room">Stanza</string>
+    <string name="container">Mobile</string>
+    <string name="spot">Posizione</string>
+    <string name="items">Oggetti</string>
+    <string name="documents">Documenti</string>
+    <string name="favorites">Preferiti</string>
+    <string name="recent">Recenti</string>
+    <string name="tags">Tag</string>
+    <string name="keywords">Parole chiave</string>
+    <string name="notes">Note</string>
+    <string name="category">Categoria</string>
+    <string name="doc_type">Tipo documento</string>
+    <string name="person">Persona</string>
+    <string name="expiry_date">Scadenza</string>
+    <string name="spot_code">Codice</string>
+    
+    <!-- Placeholders -->
+    <string name="search_hint">Cerca oggetti e documenti…</string>
+    <string name="name_hint">Nome oggetto</string>
+    <string name="title_hint">Titolo documento</string>
+    <string name="select_position">Seleziona posizione</string>
+    <string name="no_results">Nessun risultato</string>
+    <string name="no_items">Nessun oggetto</string>
+    <string name="no_documents">Nessun documento</string>
+    <string name="no_favorites">Nessun preferito</string>
+    
+    <!-- Backup/Restore -->
+    <string name="backup">Backup</string>
+    <string name="restore">Ripristina</string>
+    <string name="export_data">Esporta dati</string>
+    <string name="import_data">Importa dati</string>
+    <string name="backup_success">Backup completato</string>
+    <string name="restore_success">Ripristino completato</string>
+    <string name="backup_error">Errore durante il backup</string>
+    <string name="restore_error">Errore durante il ripristino</string>
+    <string name="reset_data">Cancella tutti i dati</string>
+    <string name="reset_confirm">Sei sicuro di voler cancellare tutti i dati? Questa azione non può essere annullata.</string>
+    
+    <!-- Dialogs -->
+    <string name="confirm_delete">Conferma eliminazione</string>
+    <string name="delete_item_confirm">Sei sicuro di voler eliminare questo oggetto?</string>
+    <string name="delete_document_confirm">Sei sicuro di voler eliminare questo documento?</string>
+    <string name="delete_room_confirm">Eliminare questa stanza? Verranno eliminati anche tutti i mobili, posizioni e contenuti.</string>
+    <string name="delete_container_confirm">Eliminare questo mobile? Verranno eliminate anche tutte le posizioni e contenuti.</string>
+    <string name="delete_spot_confirm">Eliminare questa posizione? Verranno eliminati anche tutti gli oggetti e documenti.</string>
+    
+    <!-- Create new -->
+    <string name="new_room">Nuova stanza</string>
+    <string name="new_container">Nuovo mobile</string>
+    <string name="new_spot">Nuova posizione</string>
+    <string name="room_name_hint">es. Camera, Cucina, Garage</string>
+    <string name="container_name_hint">es. Armadio, Cassettiera, Scaffale</string>
+    <string name="spot_name_hint">es. Cassetto 1, Mensola alta, Ripiano 3</string>
+    
+    <!-- Container types -->
+    <string name="type_armadio">Armadio</string>
+    <string name="type_cassetto">Cassetto</string>
+    <string name="type_scaffale">Scaffale</string>
+    <string name="type_cartellina">Cartellina</string>
+    <string name="type_altro">Altro</string>
+    
+    <!-- Info -->
+    <string name="about">Informazioni</string>
+    <string name="version">Versione</string>
+</resources>

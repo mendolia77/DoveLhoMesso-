@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    
+    <!-- Background shape - rounded drawer/cabinet -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M30,28 L78,28 C80.2,28 82,29.8 82,32 L82,76 C82,78.2 80.2,80 78,80 L30,80 C27.8,80 26,78.2 26,76 L26,32 C26,29.8 27.8,28 30,28 Z"/>
+    
+    <!-- Drawer outline shadow -->
+    <path
+        android:fillColor="#1565C0"
+        android:fillAlpha="0.3"
+        android:pathData="M30,28 L78,28 C80.2,28 82,29.8 82,32 L82,76 C82,78.2 80.2,80 78,80 L30,80 C27.8,80 26,78.2 26,76 L26,32 C26,29.8 27.8,28 30,28 Z M30,30 C28.9,30 28,30.9 28,32 L28,76 C28,77.1 28.9,78 30,78 L78,78 C79.1,78 80,77.1 80,76 L80,32 C80,30.9 79.1,30 78,30 L30,30 Z"/>
+    
+    <!-- Drawer 1 - top -->
+    <path
+        android:fillColor="#E3F2FD"
+        android:pathData="M30,32 L78,32 L78,44 L30,44 Z"/>
+    <path
+        android:fillColor="#1976D2"
+        android:pathData="M30,32 L78,32 L78,34 L30,34 Z"/>
+    <!-- Drawer 1 handle -->
+    <path
+        android:fillColor="#1976D2"
+        android:pathData="M49,37 L59,37 L59,39 L49,39 Z"/>
+    
+    <!-- Drawer 2 - middle -->
+    <path
+        android:fillColor="#E3F2FD"
+        android:pathData="M30,46 L78,46 L78,58 L30,58 Z"/>
+    <path
+        android:fillColor="#1976D2"
+        android:pathData="M30,46 L78,46 L78,48 L30,48 Z"/>
+    <!-- Drawer 2 handle -->
+    <path
+        android:fillColor="#1976D2"
+        android:pathData="M49,51 L59,51 L59,53 L49,53 Z"/>
+    
+    <!-- Drawer 3 - bottom -->
+    <path
+        android:fillColor="#E3F2FD"
+        android:pathData="M30,60 L78,60 L78,76 L30,76 Z"/>
+    <path
+        android:fillColor="#1976D2"
+        android:pathData="M30,60 L78,60 L78,62 L30,62 Z"/>
+    <!-- Drawer 3 handle -->
+    <path
+        android:fillColor="#1976D2"
+        android:pathData="M49,67 L59,67 L59,69 L49,69 Z"/>
+    
+    <!-- Location pin / marker on drawer 2 -->
+    <path
+        android:fillColor="#4CAF50"
+        android:pathData="M38,50 C38,47.8 39.8,46 42,46 C44.2,46 46,47.8 46,50 C46,53 42,56 42,56 C42,56 38,53 38,50 Z"/>
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M42,48.5 C42.8,48.5 43.5,49.2 43.5,50 C43.5,50.8 42.8,51.5 42,51.5 C41.2,51.5 40.5,50.8 40.5,50 C40.5,49.2 41.2,48.5 42,48.5 Z"/>
+    
+    <!-- Magnifying glass -->
+    <group>
+        <!-- Glass circle background -->
+        <path
+            android:fillColor="#FF9800"
+            android:pathData="M72,24 C77.5,24 82,28.5 82,34 C82,39.5 77.5,44 72,44 C66.5,44 62,39.5 62,34 C62,28.5 66.5,24 72,24 Z"/>
+        <!-- Glass circle inner -->
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M72,27 C75.9,27 79,30.1 79,34 C79,37.9 75.9,41 72,41 C68.1,41 65,37.9 65,34 C65,30.1 68.1,27 72,27 Z"/>
+        <!-- Glass circle stroke -->
+        <path
+            android:fillColor="#FF9800"
+            android:pathData="M72,28.5 C75.1,28.5 77.5,30.9 77.5,34 C77.5,37.1 75.1,39.5 72,39.5 C68.9,39.5 66.5,37.1 66.5,34 C66.5,30.9 68.9,28.5 72,28.5 Z M72,30 C69.8,30 68,31.8 68,34 C68,36.2 69.8,38 72,38 C74.2,38 76,36.2 76,34 C76,31.8 74.2,30 72,30 Z"/>
+        <!-- Handle -->
+        <path
+            android:fillColor="#FF9800"
+            android:pathData="M78,40 L84,46 L81,49 L75,43 Z"/>
+        <!-- Handle shadow -->
+        <path
+            android:fillColor="#F57C00"
+            android:pathData="M80,42 L84,46 L82,48 L78,44 Z"/>
+    </group>
+    
+    <!-- Document icon on drawer 3 -->
+    <path
+        android:fillColor="#2196F3"
+        android:pathData="M64,64 L74,64 L74,74 L64,74 Z"/>
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M66,67 L72,67 L72,68 L66,68 Z"/>
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M66,69.5 L72,69.5 L72,70.5 L66,70.5 Z"/>
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M66,72 L70,72 L70,73 L66,73 Z"/>
+    
+</vector>

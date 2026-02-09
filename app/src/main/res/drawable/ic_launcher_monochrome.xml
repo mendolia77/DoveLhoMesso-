@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    
+    <!-- Drawer/cabinet outline -->
+    <path
+        android:fillColor="#000000"
+        android:pathData="M30,28 L78,28 C80.2,28 82,29.8 82,32 L82,76 C82,78.2 80.2,80 78,80 L30,80 C27.8,80 26,78.2 26,76 L26,32 C26,29.8 27.8,28 30,28 Z M30,30 C28.9,30 28,30.9 28,32 L28,76 C28,77.1 28.9,78 30,78 L78,78 C79.1,78 80,77.1 80,76 L80,32 C80,30.9 79.1,30 78,30 L30,30 Z"/>
+    
+    <!-- Drawer lines -->
+    <path
+        android:fillColor="#000000"
+        android:pathData="M28,44 L80,44 L80,46 L28,46 Z"/>
+    <path
+        android:fillColor="#000000"
+        android:pathData="M28,58 L80,58 L80,60 L28,60 Z"/>
+    
+    <!-- Drawer handles -->
+    <path
+        android:fillColor="#000000"
+        android:pathData="M49,36 L59,36 L59,39 L49,39 Z"/>
+    <path
+        android:fillColor="#000000"
+        android:pathData="M49,50 L59,50 L59,53 L49,53 Z"/>
+    <path
+        android:fillColor="#000000"
+        android:pathData="M49,66 L59,66 L59,69 L49,69 Z"/>
+    
+    <!-- Magnifying glass -->
+    <path
+        android:fillColor="#000000"
+        android:pathData="M72,24 C77.5,24 82,28.5 82,34 C82,39.5 77.5,44 72,44 C66.5,44 62,39.5 62,34 C62,28.5 66.5,24 72,24 Z M72,27 C68.1,27 65,30.1 65,34 C65,37.9 68.1,41 72,41 C75.9,41 79,37.9 79,34 C79,30.1 75.9,27 72,27 Z"/>
+    <!-- Handle -->
+    <path
+        android:fillColor="#000000"
+        android:pathData="M78,40 L84,46 L81,49 L75,43 Z"/>
+    
+</vector>
