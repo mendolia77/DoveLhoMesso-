@@ -10,8 +10,10 @@ import com.dovelhomesso.app.data.SearchResult
 import com.dovelhomesso.app.data.exportimport.BackupManager
 import com.dovelhomesso.app.data.repositories.AppRepository
 import com.dovelhomesso.app.ui.components.SelectedPosition
+import com.dovelhomesso.app.util.ImageHelper
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 
 import com.dovelhomesso.app.DoveLhoMessoApp
@@ -211,7 +213,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         note: String? = null,
         imagePath: String? = null
     ) {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
+            val securePath = ImageHelper.copyImageToInternalStorage(getApplication(), imagePath) ?: imagePath
+            
             repository.insertItem(
                 ItemEntity(
                     name = name,
@@ -220,7 +224,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     keywords = keywords,
                     tags = tags,
                     note = note,
-                    imagePath = imagePath
+                    imagePath = securePath
                 )
             )
             loadRecentEntries()
@@ -228,8 +232,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
     
     fun updateItem(item: ItemEntity) {
-        viewModelScope.launch {
-            repository.updateItem(item)
+        viewModelScope.launch(Dispatchers.IO) {
+            val securePath = ImageHelper.copyImageToInternalStorage(getApplication(), item.imagePath) ?: item.imagePath
+            
+            repository.updateItem(item.copy(imagePath = securePath))
             loadRecentEntries()
         }
     }
