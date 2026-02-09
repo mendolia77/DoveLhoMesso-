@@ -1,6 +1,7 @@
 package com.dovelhomesso.app.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -40,6 +41,7 @@ fun ItemDetailScreen(
     var spotCode by remember { mutableStateOf("") }
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showEditDialog by remember { mutableStateOf(false) }
+    var showLendingDialog by remember { mutableStateOf(false) }
     var showChangePositionPicker by remember { mutableStateOf(false) }
     
     val rooms by viewModel.rooms.collectAsState()
@@ -78,6 +80,13 @@ fun ItemDetailScreen(
                     }
                 },
                 actions = {
+                    IconButton(onClick = { showLendingDialog = true }) {
+                        Icon(
+                            imageVector = if (currentItem.isLent) Icons.Default.Person else Icons.Default.PersonAdd,
+                            contentDescription = "Gestisci Prestito",
+                            tint = if (currentItem.isLent) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                     IconButton(onClick = { 
                         viewModel.duplicateItem(currentItem)
                     }) {
@@ -173,6 +182,38 @@ fun ItemDetailScreen(
                 }
             }
             
+            // Lending Status
+            if (currentItem.isLent) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.tertiaryContainer
+                    )
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.Person, contentDescription = null, tint = MaterialTheme.colorScheme.onTertiaryContainer)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "In prestito a: ${currentItem.lentTo ?: "Sconosciuto"}",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onTertiaryContainer
+                            )
+                        }
+                        if (currentItem.lentDate != null) {
+                            val date = java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault()).format(java.util.Date(currentItem.lentDate))
+                            Text(
+                                text = "Dal: $date",
+                                style = MaterialTheme.typography.bodyMedium,
+                                modifier = Modifier.padding(start = 32.dp),
+                                color = MaterialTheme.colorScheme.onTertiaryContainer
+                            )
+                        }
+                    }
+                }
+            }
+
             // Position
             Card(
                 onClick = { showChangePositionPicker = true }
@@ -328,6 +369,75 @@ fun ItemDetailScreen(
             onDismiss = { showChangePositionPicker = false }
         )
     }
+    
+    // Lending Dialog
+    if (showLendingDialog) {
+        LendingDialog(
+            item = currentItem,
+            onConfirm = { updatedItem ->
+                viewModel.updateItem(updatedItem)
+                showLendingDialog = false
+            },
+            onDismiss = { showLendingDialog = false }
+        )
+    }
+}
+
+@Composable
+private fun LendingDialog(
+    item: ItemEntity,
+    onConfirm: (ItemEntity) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var isLent by remember { mutableStateOf(item.isLent) }
+    var lentTo by remember { mutableStateOf(item.lentTo ?: "") }
+    
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Gestione Prestito") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.clickable { isLent = !isLent }
+                ) {
+                    Checkbox(checked = isLent, onCheckedChange = { isLent = it })
+                    Text("Oggetto in prestito")
+                }
+                
+                if (isLent) {
+                    OutlinedTextField(
+                        value = lentTo,
+                        onValueChange = { lentTo = it },
+                        label = { Text("Prestato a") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    onConfirm(
+                        item.copy(
+                            isLent = isLent,
+                            lentTo = if (isLent) lentTo.takeIf { it.isNotBlank() } else null,
+                            lentDate = if (isLent) (item.lentDate ?: System.currentTimeMillis()) else null
+                        )
+                    )
+                },
+                enabled = !isLent || lentTo.isNotBlank()
+            ) {
+                Text(stringResource(R.string.save))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.cancel))
+            }
+        }
+    )
 }
 
 @Composable

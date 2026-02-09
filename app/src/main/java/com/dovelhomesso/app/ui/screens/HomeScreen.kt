@@ -32,13 +32,17 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.activity.compose.rememberLauncherForActivityResult
 import com.dovelhomesso.app.R
+import com.dovelhomesso.app.data.SearchResultType
 import com.dovelhomesso.app.data.entities.ContainerEntity
 import com.dovelhomesso.app.data.entities.SpotEntity
 import com.dovelhomesso.app.data.repositories.AppRepository
 import com.dovelhomesso.app.ui.components.*
 import com.dovelhomesso.app.ui.theme.*
 import com.dovelhomesso.app.ui.viewmodels.MainViewModel
+import com.journeyapps.barcodescanner.ScanContract
+import com.journeyapps.barcodescanner.ScanOptions
 import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -67,6 +71,18 @@ fun HomeScreen(
     var itemToMoveId by remember { mutableStateOf<Long?>(null) }
     var documentToMoveId by remember { mutableStateOf<Long?>(null) }
     
+    val scanLauncher = rememberLauncherForActivityResult(ScanContract()) { result ->
+        if (result.contents != null) {
+            viewModel.findSpotByCode(result.contents)
+        }
+    }
+    
+    LaunchedEffect(Unit) {
+        viewModel.foundSpotEvent.collect { spotId ->
+            onNavigateToSpotDetail(spotId)
+        }
+    }
+    
     // Load recent entries when screen is displayed
     LaunchedEffect(Unit) {
         viewModel.loadRecentEntries()
@@ -86,7 +102,14 @@ fun HomeScreen(
                 AnimatedGradientHeader(
                     onSettingsClick = onNavigateToSettings,
                     searchQuery = searchQuery,
-                    onSearchChange = { viewModel.search(it) }
+                    onSearchChange = { viewModel.search(it) },
+                    onScanClick = {
+                        val options = ScanOptions()
+                        options.setDesiredBarcodeFormats(ScanOptions.QR_CODE)
+                        options.setPrompt("Inquadra il QR Code")
+                        options.setBeepEnabled(true)
+                        scanLauncher.launch(options)
+                    }
                 )
             }
             
@@ -129,14 +152,16 @@ fun HomeScreen(
                             result = result,
                             onClick = {
                                 when (result.type) {
-                                    AppRepository.SearchResultType.ITEM -> onNavigateToItemDetail(result.id)
-                                    AppRepository.SearchResultType.DOCUMENT -> onNavigateToDocumentDetail(result.id)
+                                    SearchResultType.ITEM -> onNavigateToItemDetail(result.id)
+                                    SearchResultType.DOCUMENT -> onNavigateToDocumentDetail(result.id)
+                                    SearchResultType.SPOT -> onNavigateToSpotDetail(result.id)
                                 }
                             },
                             onMove = {
                                 when (result.type) {
-                                    AppRepository.SearchResultType.ITEM -> itemToMoveId = result.id
-                                    AppRepository.SearchResultType.DOCUMENT -> documentToMoveId = result.id
+                                    SearchResultType.ITEM -> itemToMoveId = result.id
+                                    SearchResultType.DOCUMENT -> documentToMoveId = result.id
+                                    SearchResultType.SPOT -> {}
                                 }
                             }
                         )
@@ -196,14 +221,16 @@ fun HomeScreen(
                                 entry = entry,
                                 onClick = {
                                     when (entry.type) {
-                                        AppRepository.SearchResultType.ITEM -> onNavigateToItemDetail(entry.id)
-                                        AppRepository.SearchResultType.DOCUMENT -> onNavigateToDocumentDetail(entry.id)
+                                        SearchResultType.ITEM -> onNavigateToItemDetail(entry.id)
+                                        SearchResultType.DOCUMENT -> onNavigateToDocumentDetail(entry.id)
+                                        SearchResultType.SPOT -> onNavigateToSpotDetail(entry.id)
                                     }
                                 },
                                 onMove = {
                                     when (entry.type) {
-                                        AppRepository.SearchResultType.ITEM -> itemToMoveId = entry.id
-                                        AppRepository.SearchResultType.DOCUMENT -> documentToMoveId = entry.id
+                                        SearchResultType.ITEM -> itemToMoveId = entry.id
+                                        SearchResultType.DOCUMENT -> documentToMoveId = entry.id
+                                        SearchResultType.SPOT -> {}
                                     }
                                 }
                             )
@@ -288,7 +315,8 @@ fun HomeScreen(
 private fun AnimatedGradientHeader(
     onSettingsClick: () -> Unit,
     searchQuery: String,
-    onSearchChange: (String) -> Unit
+    onSearchChange: (String) -> Unit,
+    onScanClick: () -> Unit
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "header")
     val gradientOffset by infiniteTransition.animateFloat(
@@ -435,16 +463,20 @@ private fun AnimatedGradientHeader(
                         )
                     },
                     trailingIcon = {
-                        AnimatedVisibility(
-                            visible = searchQuery.isNotEmpty(),
-                            enter = fadeIn() + scaleIn(),
-                            exit = fadeOut() + scaleOut()
-                        ) {
+                        if (searchQuery.isNotEmpty()) {
                             IconButton(onClick = { onSearchChange("") }) {
                                 Icon(
                                     imageVector = Icons.Filled.Close,
                                     contentDescription = "Cancella",
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        } else {
+                            IconButton(onClick = onScanClick) {
+                                Icon(
+                                    imageVector = Icons.Filled.QrCodeScanner,
+                                    contentDescription = "Scan QR",
+                                    tint = MaterialTheme.colorScheme.primary
                                 )
                             }
                         }
@@ -841,7 +873,7 @@ private fun AnimatedFavoriteChip(
 
 @Composable
 private fun SearchResultCard(
-    result: AppRepository.SearchResult,
+    result: com.dovelhomesso.app.data.SearchResult,
     onClick: () -> Unit,
     onMove: () -> Unit
 ) {
@@ -880,12 +912,14 @@ private fun SearchResultCard(
         ) {
             // Animated type icon
             val iconColor = when (result.type) {
-                AppRepository.SearchResultType.ITEM -> ItemColor
-                AppRepository.SearchResultType.DOCUMENT -> DocumentColor
+                SearchResultType.ITEM -> ItemColor
+                SearchResultType.DOCUMENT -> DocumentColor
+                SearchResultType.SPOT -> MaterialTheme.colorScheme.primary
             }
             val iconBg = when (result.type) {
-                AppRepository.SearchResultType.ITEM -> ItemColorLight
-                AppRepository.SearchResultType.DOCUMENT -> DocumentColorLight
+                SearchResultType.ITEM -> ItemColorLight
+                SearchResultType.DOCUMENT -> DocumentColorLight
+                SearchResultType.SPOT -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
             }
             
             Box(
@@ -896,8 +930,9 @@ private fun SearchResultCard(
             ) {
                 Icon(
                     imageVector = when (result.type) {
-                        AppRepository.SearchResultType.ITEM -> Icons.Filled.Inventory2
-                        AppRepository.SearchResultType.DOCUMENT -> Icons.Filled.Description
+                        SearchResultType.ITEM -> Icons.Filled.Inventory2
+                        SearchResultType.DOCUMENT -> Icons.Filled.Description
+                        SearchResultType.SPOT -> Icons.Filled.Place
                     },
                     contentDescription = null,
                     tint = iconColor,
@@ -915,27 +950,31 @@ private fun SearchResultCard(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-                Spacer(modifier = Modifier.height(4.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Filled.Place,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(14.dp)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = result.breadcrumb,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
+                
+                if (!result.subtitle.isNullOrBlank()) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Filled.Place,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = result.subtitle,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
                 }
-                if (result.spotCode.isNotEmpty()) {
+                
+                if (!result.matchDetails.isNullOrBlank()) {
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = result.spotCode,
+                        text = result.matchDetails,
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.Medium,
@@ -949,28 +988,30 @@ private fun SearchResultCard(
                 }
             }
             
-            Box {
-                IconButton(onClick = { showMenu = true }) {
-                    Icon(
-                        imageVector = Icons.Default.MoreVert,
-                        contentDescription = "Opzioni",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                DropdownMenu(
-                    expanded = showMenu,
-                    onDismissRequest = { showMenu = false }
-                ) {
-                    DropdownMenuItem(
-                        text = { Text("Sposta") },
-                        onClick = {
-                            showMenu = false
-                            onMove()
-                        },
-                        leadingIcon = { 
-                            Icon(Icons.Default.LowPriority, contentDescription = null) 
-                        }
-                    )
+            if (result.type != SearchResultType.SPOT) {
+                Box {
+                    IconButton(onClick = { showMenu = true }) {
+                        Icon(
+                            imageVector = Icons.Default.MoreVert,
+                            contentDescription = "Opzioni",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    DropdownMenu(
+                        expanded = showMenu,
+                        onDismissRequest = { showMenu = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Sposta") },
+                            onClick = {
+                                showMenu = false
+                                onMove()
+                            },
+                            leadingIcon = { 
+                                Icon(Icons.Default.LowPriority, contentDescription = null) 
+                            }
+                        )
+                    }
                 }
             }
         }
@@ -1017,8 +1058,9 @@ private fun RecentEntryCard(
                     .size(42.dp)
                     .background(
                         color = when (entry.type) {
-                            AppRepository.SearchResultType.ITEM -> ItemColorLight
-                            AppRepository.SearchResultType.DOCUMENT -> DocumentColorLight
+                            SearchResultType.ITEM -> ItemColorLight
+                            SearchResultType.DOCUMENT -> DocumentColorLight
+                            SearchResultType.SPOT -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
                         },
                         shape = RoundedCornerShape(10.dp)
                     ),
@@ -1026,13 +1068,15 @@ private fun RecentEntryCard(
             ) {
                 Icon(
                     imageVector = when (entry.type) {
-                        AppRepository.SearchResultType.ITEM -> Icons.Outlined.Inventory2
-                        AppRepository.SearchResultType.DOCUMENT -> Icons.Outlined.Description
+                        SearchResultType.ITEM -> Icons.Outlined.Inventory2
+                        SearchResultType.DOCUMENT -> Icons.Outlined.Description
+                        SearchResultType.SPOT -> Icons.Outlined.Place
                     },
                     contentDescription = null,
                     tint = when (entry.type) {
-                        AppRepository.SearchResultType.ITEM -> ItemColor
-                        AppRepository.SearchResultType.DOCUMENT -> DocumentColor
+                        SearchResultType.ITEM -> ItemColor
+                        SearchResultType.DOCUMENT -> DocumentColor
+                        SearchResultType.SPOT -> MaterialTheme.colorScheme.primary
                     },
                     modifier = Modifier.size(22.dp)
                 )
@@ -1057,28 +1101,30 @@ private fun RecentEntryCard(
                 )
             }
             
-            Box {
-                IconButton(onClick = { showMenu = true }) {
-                    Icon(
-                        imageVector = Icons.Default.MoreVert,
-                        contentDescription = "Opzioni",
-                        tint = MaterialTheme.colorScheme.outlineVariant
-                    )
-                }
-                DropdownMenu(
-                    expanded = showMenu,
-                    onDismissRequest = { showMenu = false }
-                ) {
-                    DropdownMenuItem(
-                        text = { Text("Sposta") },
-                        onClick = {
-                            showMenu = false
-                            onMove()
-                        },
-                        leadingIcon = { 
-                            Icon(Icons.Default.LowPriority, contentDescription = null) 
-                        }
-                    )
+            if (entry.type != SearchResultType.SPOT) {
+                Box {
+                    IconButton(onClick = { showMenu = true }) {
+                        Icon(
+                            imageVector = Icons.Default.MoreVert,
+                            contentDescription = "Opzioni",
+                            tint = MaterialTheme.colorScheme.outlineVariant
+                        )
+                    }
+                    DropdownMenu(
+                        expanded = showMenu,
+                        onDismissRequest = { showMenu = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Sposta") },
+                            onClick = {
+                                showMenu = false
+                                onMove()
+                            },
+                            leadingIcon = { 
+                                Icon(Icons.Default.LowPriority, contentDescription = null) 
+                            }
+                        )
+                    }
                 }
             }
         }

@@ -15,7 +15,7 @@ import com.dovelhomesso.app.data.entities.*
         ItemEntity::class,
         DocumentEntity::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {

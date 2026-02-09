@@ -6,6 +6,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.dovelhomesso.app.data.db.AppDatabase
 import com.dovelhomesso.app.data.entities.*
+import com.dovelhomesso.app.data.SearchResult
 import com.dovelhomesso.app.data.exportimport.BackupManager
 import com.dovelhomesso.app.data.repositories.AppRepository
 import com.dovelhomesso.app.ui.components.SelectedPosition
@@ -43,8 +44,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
     
-    private val _searchResults = MutableStateFlow<List<AppRepository.SearchResult>>(emptyList())
-    val searchResults: StateFlow<List<AppRepository.SearchResult>> = _searchResults.asStateFlow()
+    private val _searchResults = MutableStateFlow<List<SearchResult>>(emptyList())
+    val searchResults: StateFlow<List<SearchResult>> = _searchResults.asStateFlow()
     
     private val _isSearching = MutableStateFlow(false)
     val isSearching: StateFlow<Boolean> = _isSearching.asStateFlow()
@@ -76,6 +77,20 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
     
+    // ========== Scanner ==========
+    
+    private val _foundSpotEvent = MutableSharedFlow<Long>()
+    val foundSpotEvent = _foundSpotEvent.asSharedFlow()
+    
+    fun findSpotByCode(code: String) {
+        viewModelScope.launch {
+            val spot = repository.getSpotByCode(code)
+            if (spot != null) {
+                _foundSpotEvent.emit(spot.id)
+            }
+        }
+    }
+
     // ========== Recent Entries ==========
     
     private val _recentEntries = MutableStateFlow<List<AppRepository.RecentEntry>>(emptyList())
@@ -250,6 +265,18 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
     
+    fun moveItems(itemIds: List<Long>, newSpotId: Long) {
+        viewModelScope.launch {
+            itemIds.forEach { id ->
+                val item = repository.getItemById(id)
+                if (item != null) {
+                    repository.updateItem(item.copy(spotId = newSpotId))
+                }
+            }
+            loadRecentEntries()
+        }
+    }
+    
     // ========== Document Operations ==========
     
     fun getDocumentById(documentId: Long): Flow<DocumentEntity?> = 
@@ -325,6 +352,18 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
     
+    fun moveDocuments(documentIds: List<Long>, newSpotId: Long) {
+        viewModelScope.launch {
+            documentIds.forEach { id ->
+                val document = repository.getDocumentById(id)
+                if (document != null) {
+                    repository.updateDocument(document.copy(spotId = newSpotId))
+                }
+            }
+            loadRecentEntries()
+        }
+    }
+    
     // ========== Breadcrumb Helper ==========
     
     suspend fun getBreadcrumb(spotId: Long): String = repository.getBreadcrumbForSpot(spotId)
@@ -341,7 +380,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         data class Error(val message: String) : BackupStatus()
     }
     
-    fun exportBackup(uri: Uri) {
+    fun exportBackupToUri(uri: Uri) {
         viewModelScope.launch {
             _backupStatus.value = BackupStatus.InProgress
             backupManager.exportToUri(uri).fold(
@@ -355,7 +394,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
     
-    fun importBackup(uri: Uri) {
+    fun importBackupFromUri(uri: Uri) {
         viewModelScope.launch {
             _backupStatus.value = BackupStatus.InProgress
             backupManager.importFromUri(uri).fold(

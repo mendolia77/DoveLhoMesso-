@@ -9,6 +9,9 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 
+import com.dovelhomesso.app.data.SearchResult
+import com.dovelhomesso.app.data.SearchResultType
+
 class AppRepository(
     private val houseRoomDao: HouseRoomDao,
     private val containerDao: ContainerDao,
@@ -71,6 +74,8 @@ class AppRepository(
     fun getSpotByIdFlow(id: Long): Flow<SpotEntity?> = spotDao.getSpotByIdFlow(id)
     
     suspend fun getSpotById(id: Long): SpotEntity? = spotDao.getSpotById(id)
+
+    suspend fun getSpotByCode(code: String): SpotEntity? = spotDao.getSpotByCode(code)
     
     fun getFavoriteSpots(): Flow<List<SpotEntity>> = spotDao.getFavoriteSpots()
     
@@ -167,42 +172,26 @@ class AppRepository(
     
     // ========== Search ==========
     
-    data class SearchResult(
-        val id: Long,
-        val title: String,
-        val type: SearchResultType,
-        val spotId: Long,
-        val spotCode: String,
-        val breadcrumb: String,
-        val updatedAt: Long
-    )
-    
-    enum class SearchResultType {
-        ITEM, DOCUMENT
-    }
-    
     suspend fun globalSearch(query: String): List<SearchResult> = withContext(Dispatchers.IO) {
         if (query.isBlank()) return@withContext emptyList()
         
         try {
             val items = searchItems(query)
             val documents = searchDocuments(query)
+            val spots = spotDao.searchSpots(query)
             
             val results = mutableListOf<SearchResult>()
             
             for (item in items) {
                 try {
                     val breadcrumb = getBreadcrumbForSpot(item.spotId)
-                    val spot = getSpotById(item.spotId)
                     results.add(
                         SearchResult(
                             id = item.id,
                             title = item.name,
+                            subtitle = breadcrumb,
                             type = SearchResultType.ITEM,
-                            spotId = item.spotId,
-                            spotCode = spot?.code ?: "",
-                            breadcrumb = breadcrumb,
-                            updatedAt = item.updatedAt
+                            matchDetails = null
                         )
                     )
                 } catch (e: Exception) {
@@ -213,16 +202,13 @@ class AppRepository(
             for (doc in documents) {
                 try {
                     val breadcrumb = getBreadcrumbForSpot(doc.spotId)
-                    val spot = getSpotById(doc.spotId)
                     results.add(
                         SearchResult(
                             id = doc.id,
                             title = doc.title,
+                            subtitle = breadcrumb,
                             type = SearchResultType.DOCUMENT,
-                            spotId = doc.spotId,
-                            spotCode = spot?.code ?: "",
-                            breadcrumb = breadcrumb,
-                            updatedAt = doc.updatedAt
+                            matchDetails = doc.docType
                         )
                     )
                 } catch (e: Exception) {
@@ -230,7 +216,24 @@ class AppRepository(
                 }
             }
             
-            results.sortedByDescending { it.updatedAt }
+            for (spot in spots) {
+                try {
+                    val breadcrumb = getBreadcrumbForSpot(spot.id)
+                    results.add(
+                        SearchResult(
+                            id = spot.id,
+                            title = spot.label,
+                            subtitle = breadcrumb,
+                            type = SearchResultType.SPOT,
+                            matchDetails = "Codice: ${spot.code}"
+                        )
+                    )
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+            
+            results.sortedBy { it.title }
         } catch (e: Exception) {
             e.printStackTrace()
             emptyList()

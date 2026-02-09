@@ -37,14 +37,14 @@ fun SettingsScreen(
     val createDocumentLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.CreateDocument(BackupManager.MIME_TYPE)
     ) { uri ->
-        uri?.let { viewModel.exportBackup(it) }
+        uri?.let { viewModel.exportBackupToUri(it) }
     }
     
     // Launcher for opening backup file
     val openDocumentLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri ->
-        uri?.let { viewModel.importBackup(it) }
+        uri?.let { viewModel.importBackupFromUri(it) }
     }
     
     // Show snackbar on status change
@@ -159,7 +159,7 @@ fun SettingsScreen(
             
             // Backup Section
             Text(
-                text = stringResource(R.string.backup),
+                text = "Backup e Cloud",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
@@ -167,10 +167,10 @@ fun SettingsScreen(
             
             // Export
             ListItem(
-                headlineContent = { Text(stringResource(R.string.export_data)) },
-                supportingContent = { Text("Crea un file JSON con tutti i tuoi dati") },
+                headlineContent = { Text("Backup su Cloud / File") },
+                supportingContent = { Text("Salva su Google Drive, Dropbox o dispositivo") },
                 leadingContent = {
-                    Icon(Icons.Default.Upload, contentDescription = null)
+                    Icon(Icons.Default.CloudUpload, contentDescription = null)
                 },
                 modifier = Modifier.clickableIfEnabled(backupStatus !is MainViewModel.BackupStatus.InProgress) {
                     val filename = viewModel.generateBackupFilename()
@@ -180,10 +180,10 @@ fun SettingsScreen(
             
             // Import
             ListItem(
-                headlineContent = { Text(stringResource(R.string.import_data)) },
-                supportingContent = { Text("Ripristina i dati da un file di backup") },
+                headlineContent = { Text("Ripristina da Cloud / File") },
+                supportingContent = { Text("Importa da Google Drive, Dropbox o dispositivo") },
                 leadingContent = {
-                    Icon(Icons.Default.Download, contentDescription = null)
+                    Icon(Icons.Default.CloudDownload, contentDescription = null)
                 },
                 modifier = Modifier.clickableIfEnabled(backupStatus !is MainViewModel.BackupStatus.InProgress) {
                     openDocumentLauncher.launch(arrayOf(BackupManager.MIME_TYPE, "application/json"))

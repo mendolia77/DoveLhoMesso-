@@ -34,6 +34,9 @@ data class ItemEntity(
     val tags: String? = null,
     val note: String? = null,
     val imagePath: String? = null,
+    val isLent: Boolean = false,
+    val lentTo: String? = null,
+    val lentDate: Long? = null,
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis()
 )

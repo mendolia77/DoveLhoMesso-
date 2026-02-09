@@ -1,7 +1,11 @@
 package com.dovelhomesso.app.ui.screens
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.background
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -17,6 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -36,6 +41,7 @@ import com.dovelhomesso.app.ui.components.SelectedPosition
 import com.dovelhomesso.app.ui.components.CreateEntityDialog
 import com.dovelhomesso.app.ui.components.CreateContainerDialog
 import com.dovelhomesso.app.data.entities.ContainerType
+import com.dovelhomesso.app.util.QRCodeHelper
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -54,11 +60,24 @@ fun SpotDetailScreen(
     
     val rooms by viewModel.rooms.collectAsState()
     val containers by viewModel.containers.collectAsState()
-    val allSpots by viewModel.spots.collectAsState()
+    val spots by viewModel.spots.collectAsState()
     
     var selectedTab by remember { mutableIntStateOf(0) }
     var breadcrumb by remember { mutableStateOf("") }
     var isGridView by remember { mutableStateOf(false) }
+    var showQRCodeDialog by remember { mutableStateOf(false) }
+    
+    var isSelectionMode by remember { mutableStateOf(false) }
+    val selectedItemIds = remember { mutableStateListOf<Long>() }
+    val selectedDocumentIds = remember { mutableStateListOf<Long>() }
+    var showMoveMultiplePicker by remember { mutableStateOf(false) }
+    
+    // Reset selection when changing tabs
+    LaunchedEffect(selectedTab) {
+        isSelectionMode = false
+        selectedItemIds.clear()
+        selectedDocumentIds.clear()
+    }
     
     var itemToMove by remember { mutableStateOf<ItemEntity?>(null) }
     var documentToMove by remember { mutableStateOf<DocumentEntity?>(null) }
@@ -69,46 +88,86 @@ fun SpotDetailScreen(
     
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {
-                    Column {
-                        Text(spot?.label ?: "")
-                        if (spot != null) {
-                            Text(
-                                text = spot!!.code,
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.primary
-                            )
+            if (isSelectionMode) {
+                TopAppBar(
+                    title = { 
+                        Text(
+                            if (selectedTab == 0) "${selectedItemIds.size} selezionati" 
+                            else "${selectedDocumentIds.size} selezionati"
+                        ) 
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = { 
+                            isSelectionMode = false 
+                            selectedItemIds.clear()
+                            selectedDocumentIds.clear()
+                        }) {
+                            Icon(Icons.Default.Close, contentDescription = "Chiudi")
+                        }
+                    },
+                    actions = {
+                        if ((selectedTab == 0 && selectedItemIds.isNotEmpty()) || 
+                            (selectedTab == 1 && selectedDocumentIds.isNotEmpty())) {
+                            IconButton(onClick = { showMoveMultiplePicker = true }) {
+                                Icon(Icons.Default.LowPriority, contentDescription = "Sposta")
+                            }
                         }
                     }
-                },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Indietro")
-                    }
-                },
-                actions = {
-                    if (selectedTab == 0) {
-                        IconButton(onClick = { isGridView = !isGridView }) {
+                )
+            } else {
+                TopAppBar(
+                    title = {
+                        Column {
+                            Text(spot?.label ?: "")
+                            if (spot != null) {
+                                Text(
+                                    text = spot!!.code,
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = {
+                            if (isSelectionMode) {
+                                isSelectionMode = false
+                                selectedItemIds.clear()
+                                selectedDocumentIds.clear()
+                            } else {
+                                onNavigateBack()
+                            }
+                        }) {
+                            Icon(Icons.Default.ArrowBack, contentDescription = "Indietro")
+                        }
+                    },
+                    actions = {
+                        IconButton(onClick = { showQRCodeDialog = true }) {
+                            Icon(Icons.Default.QrCode, contentDescription = "QR Code")
+                        }
+    
+                        if (selectedTab == 0) {
+                            IconButton(onClick = { isGridView = !isGridView }) {
+                                Icon(
+                                    imageVector = if (isGridView) Icons.Default.ViewList else Icons.Default.GridView,
+                                    contentDescription = "Cambia vista"
+                                )
+                            }
+                        }
+                        
+                        IconButton(onClick = {
+                            spot?.let { viewModel.toggleSpotFavorite(it) }
+                        }) {
                             Icon(
-                                imageVector = if (isGridView) Icons.Default.ViewList else Icons.Default.GridView,
-                                contentDescription = "Cambia vista"
+                                imageVector = if (spot?.isFavorite == true) Icons.Default.Star else Icons.Default.StarBorder,
+                                contentDescription = "Preferito",
+                                tint = if (spot?.isFavorite == true) MaterialTheme.colorScheme.primary 
+                                       else MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
-                    
-                    IconButton(onClick = {
-                        spot?.let { viewModel.toggleSpotFavorite(it) }
-                    }) {
-                        Icon(
-                            imageVector = if (spot?.isFavorite == true) Icons.Default.Star else Icons.Default.StarBorder,
-                            contentDescription = "Preferito",
-                            tint = if (spot?.isFavorite == true) MaterialTheme.colorScheme.primary 
-                                   else MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-            )
+                )
+            }
         },
         floatingActionButton = {
             ExtendedFloatingActionButton(
@@ -180,20 +239,65 @@ fun SpotDetailScreen(
                     if (isGridView) {
                         ItemsGrid(
                             items = items,
-                            onItemClick = onNavigateToItemDetail,
+                            isSelectionMode = isSelectionMode,
+                            selectedIds = selectedItemIds,
+                            onItemClick = { id ->
+                                if (isSelectionMode) {
+                                    if (selectedItemIds.contains(id)) selectedItemIds.remove(id)
+                                    else selectedItemIds.add(id)
+                                } else {
+                                    onNavigateToItemDetail(id)
+                                }
+                            },
+                            onItemLongClick = { id ->
+                                if (!isSelectionMode) {
+                                    isSelectionMode = true
+                                    selectedItemIds.add(id)
+                                }
+                            },
                             onMove = { itemToMove = it }
                         )
                     } else {
                         ItemsList(
                             items = items,
-                            onItemClick = onNavigateToItemDetail,
+                            isSelectionMode = isSelectionMode,
+                            selectedIds = selectedItemIds,
+                            onItemClick = { id ->
+                                if (isSelectionMode) {
+                                    if (selectedItemIds.contains(id)) selectedItemIds.remove(id)
+                                    else selectedItemIds.add(id)
+                                } else {
+                                    onNavigateToItemDetail(id)
+                                }
+                            },
+                            onItemLongClick = { id ->
+                                if (!isSelectionMode) {
+                                    isSelectionMode = true
+                                    selectedItemIds.add(id)
+                                }
+                            },
                             onMove = { itemToMove = it }
                         )
                     }
                 }
                 1 -> DocumentsList(
                     documents = documents,
-                    onDocumentClick = onNavigateToDocumentDetail,
+                    isSelectionMode = isSelectionMode,
+                    selectedIds = selectedDocumentIds,
+                    onDocumentClick = { id ->
+                        if (isSelectionMode) {
+                            if (selectedDocumentIds.contains(id)) selectedDocumentIds.remove(id)
+                            else selectedDocumentIds.add(id)
+                        } else {
+                            onNavigateToDocumentDetail(id)
+                        }
+                    },
+                    onDocumentLongClick = { id ->
+                        if (!isSelectionMode) {
+                            isSelectionMode = true
+                            selectedDocumentIds.add(id)
+                        }
+                    },
                     onMove = { documentToMove = it }
                 )
             }
@@ -211,7 +315,7 @@ fun SpotDetailScreen(
         PositionPickerBottomSheet(
             rooms = rooms,
             containers = containers,
-            spots = allSpots,
+            spots = spots,
             selectedPosition = selectedPosition,
             onPositionSelected = { position ->
                 viewModel.updateItem(itemToMove!!.copy(spotId = position.spot.id))
@@ -235,7 +339,7 @@ fun SpotDetailScreen(
         PositionPickerBottomSheet(
             rooms = rooms,
             containers = containers,
-            spots = allSpots,
+            spots = spots,
             selectedPosition = selectedPosition,
             onPositionSelected = { position ->
                 viewModel.updateDocument(documentToMove!!.copy(spotId = position.spot.id))
@@ -247,12 +351,100 @@ fun SpotDetailScreen(
             onDismiss = { documentToMove = null }
         )
     }
+    
+    if (showQRCodeDialog && spot != null) {
+        QRCodeDialog(
+            code = spot!!.code,
+            label = spot!!.label,
+            onDismiss = { showQRCodeDialog = false }
+        )
+    }
+    
+    if (showMoveMultiplePicker) {
+        PositionPickerBottomSheet(
+            rooms = rooms,
+            containers = containers,
+            spots = spots,
+            selectedPosition = null,
+            onDismiss = { showMoveMultiplePicker = false },
+            onPositionSelected = { position ->
+                val newSpotId = position.spot.id
+                if (selectedTab == 0 && selectedItemIds.isNotEmpty()) {
+                    viewModel.moveItems(selectedItemIds.toList(), newSpotId)
+                    selectedItemIds.clear()
+                } else if (selectedTab == 1 && selectedDocumentIds.isNotEmpty()) {
+                    viewModel.moveDocuments(selectedDocumentIds.toList(), newSpotId)
+                    selectedDocumentIds.clear()
+                }
+                isSelectionMode = false
+                showMoveMultiplePicker = false
+            },
+            onCreateRoom = { viewModel.createRoom(it) },
+            onCreateContainer = { roomId, name, type -> viewModel.createContainer(roomId, name, type) },
+            onCreateSpot = { containerId, label -> viewModel.createSpot(containerId, label) }
+        )
+    }
+}
+
+@Composable
+private fun QRCodeDialog(
+    code: String,
+    label: String,
+    onDismiss: () -> Unit
+) {
+    val bitmap = remember(code) {
+        QRCodeHelper.generateQRCode(code)
+    }
+    
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { 
+            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                Text("QR Code")
+            }
+        },
+        text = {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                if (bitmap != null) {
+                    Image(
+                        bitmap = bitmap.asImageBitmap(),
+                        contentDescription = "QR Code for $label",
+                        modifier = Modifier
+                            .size(240.dp)
+                            .padding(8.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = code,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Chiudi")
+            }
+        }
+    )
 }
 
 @Composable
 private fun ItemsGrid(
     items: List<ItemEntity>,
+    isSelectionMode: Boolean = false,
+    selectedIds: List<Long> = emptyList(),
     onItemClick: (Long) -> Unit,
+    onItemLongClick: (Long) -> Unit = {},
     onMove: (ItemEntity) -> Unit
 ) {
     if (items.isEmpty()) {
@@ -278,7 +470,10 @@ private fun ItemsGrid(
             items(items, key = { it.id }) { item ->
                 ItemGridCard(
                     item = item,
+                    isSelectionMode = isSelectionMode,
+                    isSelected = selectedIds.contains(item.id),
                     onClick = { onItemClick(item.id) },
+                    onLongClick = { onItemLongClick(item.id) },
                     onMove = { onMove(item) }
                 )
             }
@@ -286,21 +481,32 @@ private fun ItemsGrid(
     }
 }
 
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 private fun ItemGridCard(
     item: ItemEntity,
+    isSelectionMode: Boolean = false,
+    isSelected: Boolean = false,
     onClick: () -> Unit,
-    onMove: (ItemEntity) -> Unit
+    onLongClick: () -> Unit,
+    onMove: () -> Unit
 ) {
     var showMenu by remember { mutableStateOf(false) }
+    
+    val borderColor = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent
+    val borderWidth = if (isSelected) 3.dp else 0.dp
     
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .aspectRatio(0.8f)
-            .clickable(onClick = onClick),
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = onLongClick
+            ),
         shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        border = androidx.compose.foundation.BorderStroke(borderWidth, borderColor)
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             if (item.imagePath != null) {
@@ -350,32 +556,59 @@ private fun ItemGridCard(
                 )
             }
             
-            Box(
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(4.dp)
-            ) {
-                IconButton(
-                    onClick = { showMenu = true },
-                    colors = IconButtonDefaults.iconButtonColors(
-                        containerColor = if (item.imagePath != null) Color.Black.copy(alpha = 0.3f) else Color.Transparent,
-                        contentColor = if (item.imagePath != null) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+            if (isSelectionMode) {
+                if (isSelected) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(8.dp)
+                            .background(MaterialTheme.colorScheme.primary, androidx.compose.foundation.shape.CircleShape)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Check,
+                            contentDescription = "Selezionato",
+                            tint = Color.White,
+                            modifier = Modifier.padding(4.dp).size(16.dp)
+                        )
+                    }
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(8.dp)
+                            .size(24.dp)
+                            .background(Color.Black.copy(alpha = 0.3f), androidx.compose.foundation.shape.CircleShape)
+                            .border(2.dp, Color.White, androidx.compose.foundation.shape.CircleShape)
                     )
-                ) {
-                    Icon(Icons.Default.MoreVert, contentDescription = "Opzioni")
                 }
-                DropdownMenu(
-                    expanded = showMenu,
-                    onDismissRequest = { showMenu = false }
+            } else {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(4.dp)
                 ) {
-                    DropdownMenuItem(
-                        text = { Text("Sposta") },
-                        onClick = {
-                            showMenu = false
-                            onMove(item)
-                        },
-                        leadingIcon = { Icon(Icons.Default.LowPriority, contentDescription = null) }
-                    )
+                    IconButton(
+                        onClick = { showMenu = true },
+                        colors = IconButtonDefaults.iconButtonColors(
+                            containerColor = if (item.imagePath != null) Color.Black.copy(alpha = 0.3f) else Color.Transparent,
+                            contentColor = if (item.imagePath != null) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    ) {
+                        Icon(Icons.Default.MoreVert, contentDescription = "Opzioni")
+                    }
+                    DropdownMenu(
+                        expanded = showMenu,
+                        onDismissRequest = { showMenu = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Sposta") },
+                            onClick = {
+                                showMenu = false
+                                onMove()
+                            },
+                            leadingIcon = { Icon(Icons.Default.LowPriority, contentDescription = null) }
+                        )
+                    }
                 }
             }
         }
@@ -385,7 +618,10 @@ private fun ItemGridCard(
 @Composable
 private fun ItemsList(
     items: List<ItemEntity>,
+    isSelectionMode: Boolean = false,
+    selectedIds: List<Long> = emptyList(),
     onItemClick: (Long) -> Unit,
+    onItemLongClick: (Long) -> Unit = {},
     onMove: (ItemEntity) -> Unit
 ) {
     if (items.isEmpty()) {
@@ -403,13 +639,16 @@ private fun ItemsList(
         }
     } else {
         LazyColumn(
-            contentPadding = PaddingValues(16.dp),
+            contentPadding = PaddingValues(bottom = 80.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             items(items, key = { it.id }) { item ->
                 ItemCard(
                     item = item,
+                    isSelectionMode = isSelectionMode,
+                    isSelected = selectedIds.contains(item.id),
                     onClick = { onItemClick(item.id) },
+                    onLongClick = { onItemLongClick(item.id) },
                     onMove = { onMove(item) }
                 )
             }
@@ -420,7 +659,10 @@ private fun ItemsList(
 @Composable
 private fun DocumentsList(
     documents: List<DocumentEntity>,
+    isSelectionMode: Boolean = false,
+    selectedIds: List<Long> = emptyList(),
     onDocumentClick: (Long) -> Unit,
+    onDocumentLongClick: (Long) -> Unit = {},
     onMove: (DocumentEntity) -> Unit
 ) {
     if (documents.isEmpty()) {
@@ -438,13 +680,16 @@ private fun DocumentsList(
         }
     } else {
         LazyColumn(
-            contentPadding = PaddingValues(16.dp),
+            contentPadding = PaddingValues(bottom = 80.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             items(documents, key = { it.id }) { document ->
                 DocumentCard(
                     document = document,
+                    isSelectionMode = isSelectionMode,
+                    isSelected = selectedIds.contains(document.id),
                     onClick = { onDocumentClick(document.id) },
+                    onLongClick = { onDocumentLongClick(document.id) },
                     onMove = { onMove(document) }
                 )
             }
@@ -452,19 +697,31 @@ private fun DocumentsList(
     }
 }
 
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 private fun ItemCard(
     item: ItemEntity,
+    isSelectionMode: Boolean = false,
+    isSelected: Boolean = false,
     onClick: () -> Unit,
+    onLongClick: () -> Unit,
     onMove: () -> Unit
 ) {
     var showMenu by remember { mutableStateOf(false) }
     
+    val backgroundColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface
+    val border = if (isSelected) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(12.dp)
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = onLongClick
+            ),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = backgroundColor),
+        border = border
     ) {
         Row(
             modifier = Modifier
@@ -472,6 +729,15 @@ private fun ItemCard(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            if (isSelectionMode) {
+                 if (isSelected) {
+                     Icon(Icons.Default.CheckCircle, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                 } else {
+                     Icon(Icons.Default.RadioButtonUnchecked, contentDescription = null, tint = Color.Gray)
+                 }
+                 Spacer(modifier = Modifier.width(16.dp))
+            }
+
             Icon(
                 imageVector = Icons.Default.Inventory2,
                 contentDescription = null,
@@ -494,49 +760,70 @@ private fun ItemCard(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-            }
-            
-            Box {
-                IconButton(onClick = { showMenu = true }) {
-                    Icon(
-                        imageVector = Icons.Default.MoreVert,
-                        contentDescription = "Opzioni",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                if (item.isLent) {
+                    Text(
+                        text = "Prestato a ${item.lentTo}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.tertiary
                     )
                 }
-                DropdownMenu(
-                    expanded = showMenu,
-                    onDismissRequest = { showMenu = false }
-                ) {
-                    DropdownMenuItem(
-                        text = { Text("Sposta") },
-                        onClick = {
-                            showMenu = false
-                            onMove()
-                        },
-                        leadingIcon = { 
-                            Icon(Icons.Default.LowPriority, contentDescription = null) 
-                        }
-                    )
+            }
+            
+            if (!isSelectionMode) {
+                Box {
+                    IconButton(onClick = { showMenu = true }) {
+                        Icon(
+                            imageVector = Icons.Default.MoreVert,
+                            contentDescription = "Opzioni",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    DropdownMenu(
+                        expanded = showMenu,
+                        onDismissRequest = { showMenu = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Sposta") },
+                            onClick = {
+                                showMenu = false
+                                onMove()
+                            },
+                            leadingIcon = { 
+                                Icon(Icons.Default.LowPriority, contentDescription = null) 
+                            }
+                        )
+                    }
                 }
             }
         }
     }
 }
 
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 private fun DocumentCard(
     document: DocumentEntity,
+    isSelectionMode: Boolean = false,
+    isSelected: Boolean = false,
     onClick: () -> Unit,
+    onLongClick: () -> Unit,
     onMove: () -> Unit
 ) {
     var showMenu by remember { mutableStateOf(false) }
+    
+    val backgroundColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface
+    val border = if (isSelected) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(12.dp)
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = onLongClick
+            ),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = backgroundColor),
+        border = border
     ) {
         Row(
             modifier = Modifier
@@ -544,6 +831,15 @@ private fun DocumentCard(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            if (isSelectionMode) {
+                 if (isSelected) {
+                     Icon(Icons.Default.CheckCircle, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                 } else {
+                     Icon(Icons.Default.RadioButtonUnchecked, contentDescription = null, tint = Color.Gray)
+                 }
+                 Spacer(modifier = Modifier.width(16.dp))
+            }
+
             Icon(
                 imageVector = Icons.Default.Description,
                 contentDescription = null,
@@ -568,28 +864,30 @@ private fun DocumentCard(
                 }
             }
             
-            Box {
-                IconButton(onClick = { showMenu = true }) {
-                    Icon(
-                        imageVector = Icons.Default.MoreVert,
-                        contentDescription = "Opzioni",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                DropdownMenu(
-                    expanded = showMenu,
-                    onDismissRequest = { showMenu = false }
-                ) {
-                    DropdownMenuItem(
-                        text = { Text("Sposta") },
-                        onClick = {
-                            showMenu = false
-                            onMove()
-                        },
-                        leadingIcon = { 
-                            Icon(Icons.Default.LowPriority, contentDescription = null) 
-                        }
-                    )
+            if (!isSelectionMode) {
+                Box {
+                    IconButton(onClick = { showMenu = true }) {
+                        Icon(
+                            imageVector = Icons.Default.MoreVert,
+                            contentDescription = "Opzioni",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    DropdownMenu(
+                        expanded = showMenu,
+                        onDismissRequest = { showMenu = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Sposta") },
+                            onClick = {
+                                showMenu = false
+                                onMove()
+                            },
+                            leadingIcon = { 
+                                Icon(Icons.Default.LowPriority, contentDescription = null) 
+                            }
+                        )
+                    }
                 }
             }
         }

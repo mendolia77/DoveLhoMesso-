@@ -21,7 +21,7 @@ class BackupManager(
         .create()
     
     companion object {
-        const val SCHEMA_VERSION = 3
+        const val SCHEMA_VERSION = 4
         const val FILE_EXTENSION = "json"
         const val MIME_TYPE = "application/json"
     }
@@ -81,6 +81,9 @@ class BackupManager(
         val tags: String?,
         val note: String?,
         val imagePath: String?,
+        val isLent: Boolean = false,
+        val lentTo: String? = null,
+        val lentDate: Long? = null,
         val createdAt: Long,
         val updatedAt: Long
     )
@@ -237,12 +240,14 @@ class BackupManager(
     private fun ItemEntity.toDto() = ItemDto(
         id = id, name = name, spotId = spotId, category = category,
         keywords = keywords, tags = tags, note = note, imagePath = imagePath,
+        isLent = isLent, lentTo = lentTo, lentDate = lentDate,
         createdAt = createdAt, updatedAt = updatedAt
     )
     
     private fun ItemDto.toEntity() = ItemEntity(
         id = id, name = name, spotId = spotId, category = category,
         keywords = keywords, tags = tags, note = note, imagePath = imagePath,
+        isLent = isLent, lentTo = lentTo, lentDate = lentDate,
         createdAt = createdAt, updatedAt = updatedAt
     )
     
