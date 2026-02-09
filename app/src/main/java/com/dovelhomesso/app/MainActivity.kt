@@ -18,6 +18,9 @@ import androidx.compose.runtime.*
 import com.dovelhomesso.app.ui.screens.PinScreen
 import com.dovelhomesso.app.util.PinManager
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.ui.zIndex
+
 class MainActivity : ComponentActivity() {
     private var mainViewModel: MainViewModel? = null
 
@@ -43,33 +46,49 @@ class MainActivity : ComponentActivity() {
                     }
 
                     val isUnlocked by viewModel.isAppUnlocked.collectAsState()
+                    val navController = rememberNavController()
                     
-                    if (isUnlocked) {
-                        val navController = rememberNavController()
-                        
+                    Box(modifier = Modifier.fillMaxSize()) {
                         NavGraph(
                             navController = navController,
                             viewModel = viewModel
                         )
-                    } else {
-                        PinScreen(
-                            title = "Inserisci PIN per accedere",
-                            onPinCorrect = { viewModel.unlockApp() },
-                            isSettingPin = false,
-                            validatePin = { input -> PinManager.checkPin(context, input) }
-                        )
+                        
+                        if (!isUnlocked) {
+                            Surface(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .zIndex(1f),
+                                color = MaterialTheme.colorScheme.background
+                            ) {
+                                PinScreen(
+                                    title = "Inserisci PIN per accedere",
+                                    onPinCorrect = { viewModel.unlockApp() },
+                                    isSettingPin = false,
+                                    validatePin = { input -> PinManager.checkPin(context, input) }
+                                )
+                            }
+                        }
                     }
                 }
             }
         }
     }
 
+    override fun onStart() {
+        super.onStart()
+        // Check if we need to lock the app due to inactivity
+        if (PinManager.isPinSet(this)) {
+            mainViewModel?.checkLockTimeout()
+        }
+    }
+
     override fun onStop() {
         super.onStop()
-        // Lock the app if it's not a configuration change (e.g. rotation)
-        // and if a PIN is set.
+        // Record the time when app goes to background
+        // Only if it's not a configuration change (rotation)
         if (!isChangingConfigurations && PinManager.isPinSet(this)) {
-            mainViewModel?.lockApp()
+            mainViewModel?.onAppBackgrounded()
         }
     }
 }

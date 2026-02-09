@@ -452,12 +452,34 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _isAppUnlocked = MutableStateFlow(false)
     val isAppUnlocked: StateFlow<Boolean> = _isAppUnlocked.asStateFlow()
 
+    private var lastBackgroundTimestamp: Long = 0
+    
+    companion object {
+        private const val LOCK_TIMEOUT_MS = 60000L // 60 seconds
+    }
+
     fun unlockApp() {
         _isAppUnlocked.value = true
+        lastBackgroundTimestamp = 0
     }
 
     fun lockApp() {
         _isAppUnlocked.value = false
+    }
+
+    fun onAppBackgrounded() {
+        lastBackgroundTimestamp = System.currentTimeMillis()
+    }
+
+    fun checkLockTimeout() {
+        if (lastBackgroundTimestamp > 0) {
+            val elapsed = System.currentTimeMillis() - lastBackgroundTimestamp
+            if (elapsed > LOCK_TIMEOUT_MS) {
+                lockApp()
+            }
+            // Reset timestamp because we are now "foregrounded" (either locked or safely unlocked)
+            lastBackgroundTimestamp = 0
+        }
     }
 
     init {
