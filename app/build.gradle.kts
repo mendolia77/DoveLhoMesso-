@@ -87,6 +87,7 @@ dependencies {
     
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
     
     // JSON serialization
     implementation("com.google.code.gson:gson:2.10.1")
@@ -100,6 +101,9 @@ dependencies {
     // QR Code (ZXing)
     implementation("com.google.zxing:core:3.5.2")
     implementation("com.journeyapps:zxing-android-embedded:4.3.0")
+    
+    // ML Kit (Image Labeling)
+    implementation("com.google.mlkit:image-labeling:17.0.7")
     
     // Debug
     debugImplementation("androidx.compose.ui:ui-tooling")
